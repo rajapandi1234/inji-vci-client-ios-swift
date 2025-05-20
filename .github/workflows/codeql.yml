@@ -43,7 +43,7 @@ jobs:
       run: |
         echo "Running manual build for Swift..."
         xcodebuild \
-          -workspace YourWorkspace.xcworkspace \
+          -workspace package.xcworkspace \
           -scheme YourSchemeName \
           -configuration Debug \
           clean build | xcpretty
