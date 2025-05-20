@@ -22,31 +22,45 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - language: swift
-          build-mode: manual
-          config-file: ./codeql-config.yml
+          - language: swift
+            build-mode: autobuild
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        build-mode: ${{ matrix.build-mode }}
-        config-file: ${{ matrix.config-file }}
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
 
-    # 🔧 Custom manual build for Swift using xcodebuild
-    - if: matrix.build-mode == 'manual'
-      shell: bash
-      run: |
-        echo "Running manual build for Swift..."
-        xcodebuild \
-        - xcodebuild -scheme VCIClient -destination 'generic/platform=iOS' build
+      # ⚙️ CodeQL attempts to automatically build Swift code
+      - name: Autobuild
+        if: matrix.build-mode == 'autobuild'
+        uses: github/codeql-action/autobuild@v3
 
+      # 🔍 Perform CodeQL Analysis and export SARIF
+      - name: Perform CodeQL Analysis
+        id: analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+          output: codeql-output.sarif
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{matrix.language}}"
+      # 🧹 Filter SARIF results to exclude Swiftexample/
+      - name: Filter SARIF results to exclude Swiftexample/
+        if: matrix.language == 'swift'
+        uses: advanced-security/filter-sarif@v1
+        with:
+          input: codeql-output.sarif
+          output: filtered-codeql.sarif
+          ignore-paths: |
+            Swiftexample/
+
+      # ☁️ Upload the filtered SARIF results
+      - name: Upload filtered SARIF
+        if: matrix.language == 'swift'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: filtered-codeql.sarif
