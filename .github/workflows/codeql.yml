@@ -43,10 +43,8 @@ jobs:
       run: |
         echo "Running manual build for Swift..."
         xcodebuild \
-          -workspace package.xcworkspace \
-          -scheme YourSchemeName \
-          -configuration Debug \
-          clean build | xcpretty
+        - xcodebuild -scheme VCIClient -destination 'generic/platform=iOS' build
+
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
